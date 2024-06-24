@@ -25,7 +25,7 @@ def get_historical_klines(symbol, interval, start_str, end_str=None, limit=1000)
             response = requests.get(url, params=params)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            print(f"Ошибка при выполнении запроса: {e}")
+            print(f"Error executing request: {e}")
             break
         
         klines = response.json()
@@ -33,13 +33,11 @@ def get_historical_klines(symbol, interval, start_str, end_str=None, limit=1000)
             break
 
         all_klines.extend(klines)
-        
-        # Если количество полученных строк меньше лимита, значит мы получили все данные
+
         if len(klines) < limit:
             break
-        
-        # Обновляем start_ts для следующего запроса
-        start_ts = klines[-1][6] + 1  # +1 чтобы не получить дубликат последнего времени
+
+        start_ts = klines[-1][6] + 1
     
     return all_klines
 
@@ -70,20 +68,20 @@ def load_existing_data(filename):
     except FileNotFoundError:
         return []
     except json.JSONDecodeError:
-        print(f"Ошибка при чтении файла {filename}. Файл поврежден или имеет неверный формат.")
+        print(f"Error reading file {filename}. The file is damaged.")
         return []
 
 def save_to_json(data, filename):
     try:
         with open(filename, 'w') as f:
             json.dump(data, f, indent=4)
-        print(f"Данные сохранены в файл {filename}")
+        print(f"Data saved in file {filename}")
     except IOError as e:
-        print(f"Ошибка при сохранении данных в файл: {e}")
+        print(f"Error when saving data to file: {e}")
 
 def main(days):
     symbol = 'BTCUSDT'
-    interval = '1m'  # Интервал 1 минута
+    interval = '1m'
     
     now = datetime.now()
     start_date = now - timedelta(days=days)
@@ -96,24 +94,16 @@ def main(days):
 
     if klines:
         formatted_data = format_klines_data(klines)
-        
-        # Загружаем существующие данные из файла
         existing_data = load_existing_data(filename)
-        
-        # Исключаем дубликаты
         new_data = [data for data in formatted_data if data not in existing_data]
         
-        # Добавляем новые данные к существующим
-        updated_data = existing_data + new_data
-        
-        # Сохраняем обновленные данные в файл
-        save_to_json(updated_data, filename)
+        save_to_json(existing_data + new_data, filename)
     else:
-        print("Не удалось получить исторические данные.")
+        print("Failed to retrieve historical data.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Запрос и обновление исторических данных курса валют с Binance API в JSON файле.')
-    parser.add_argument('--days', type=int, default=1, help='Количество дней для получения и обновления исторических данных (по умолчанию 1)')
+    parser = argparse.ArgumentParser(description='Query and update historical exchange rate data from the Binance API in a JSON file.')
+    parser.add_argument('--days', type=int, default=1, help='Number of days to retrieve and update historical data (default 1)')
     args = parser.parse_args()
 
     main(args.days)

@@ -16,25 +16,57 @@
         // Данные для графика
         var labels = {{ labels | tojson }};
         var openPrices = {{ open_prices | tojson }};
-
+        
         // Определение данных для трассы
         var trace = {
             x: labels,
             y: openPrices,
             type: 'scatter',
-            mode: 'lines+markers',
+            mode: 'lines',
             marker: {color: 'blue'},
             line: {shape: 'linear'}
         };
-
-        // Определение данных для графика
-        var data = [trace];
 
         // Определение макета графика
         var layout = {
             title: 'Currency Exchange Rates',
             xaxis: {
-                title: 'Time'
+                title: 'Time',
+                rangeselector: {
+                    buttons: [
+                        {
+                            count: 1,
+                            label: '1h',
+                            step: 'hour',
+                            stepmode: 'backward'
+                        },
+                        {
+                            count: 24,
+                            label: '1d',
+                            step: 'hour',
+                            stepmode: 'backward'
+                        },
+                        {
+                            count: 7,
+                            label: '1w',
+                            step: 'day',
+                            stepmode: 'backward'
+                        },
+                        {
+                            count: 1,
+                            label: '1m',
+                            step: 'month',
+                            stepmode: 'backward'
+                        },
+                        {
+                            step: 'all',
+                            label: 'All'
+                        }
+                    ]
+                },
+                rangeslider: { visible: true },
+                type: 'date',
+                autorange: true
             },
             yaxis: {
                 title: 'Open Price'
@@ -42,7 +74,16 @@
         };
 
         // Отображение графика на странице
-        Plotly.newPlot('myDiv', data, layout);
+        Plotly.newPlot('myDiv', [trace], layout);
+        
+        // Обновление графика при выборе диапазона времени
+        document.getElementById('myDiv').on('plotly_relayout', function(eventdata) {
+            if (eventdata['xaxis.range[1]'] > labels[labels.length - 1]) {
+                Plotly.relayout('myDiv', {
+                    'xaxis.range[1]': labels[labels.length - 1]
+                });
+            }
+        });
     </script>
 </body>
 </html>

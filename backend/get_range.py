@@ -1,7 +1,7 @@
 import argparse
 import requests
-import json
 from datetime import datetime, timedelta
+from db import save_klines_to_db
 
 def get_historical_klines(symbol, interval, start_str, end_str=None, limit=1000):
     url = 'https://api.binance.com/api/v3/klines'
@@ -46,66 +46,32 @@ def format_klines_data(klines):
     for kline in klines:
         kline_data = {
             'open_time': datetime.fromtimestamp(kline[0] / 1000).strftime('%Y-%m-%d %H:%M:%S'),
-            'open': kline[1],
-            # 'high': kline[2],
-            # 'low': kline[3],
-            # 'close': kline[4],
-            # 'volume': kline[5],
-            # 'close_time': datetime.fromtimestamp(kline[6] / 1000).strftime('%Y-%m-%d %H:%M:%S'),
-            # 'quote_asset_volume': kline[7],
-            # 'number_of_trades': kline[8],
-            # 'taker_buy_base_asset_volume': kline[9],
-            # 'taker_buy_quote_asset_volume': kline[10]
+            'open': kline[1]
         }
         formatted_data.append(kline_data)
     return formatted_data
 
-def load_existing_data(filename):
-    try:
-        with open(filename, 'r') as f:
-            existing_data = json.load(f)
-        return existing_data
-    except FileNotFoundError:
-        return []
-    except json.JSONDecodeError:
-        print(f"Error reading file {filename}. The file is damaged.")
-        return []
-
-def save_to_json(data, filename):
-    try:
-        with open(filename, 'w') as f:
-            json.dump(data, f, indent=4)
-        print(f"Data saved in file {filename}")
-    except IOError as e:
-        print(f"Error when saving data to file: {e}")
-
-def main(days):
+def main(minutes):
     symbol = 'BTCUSDT'
     interval = '1m'
     
     now = datetime.now()
-    start_date = now - timedelta(days=days)
+    start_date = now - timedelta(minutes=minutes)
     
     start_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
     end_str = now.strftime('%Y-%m-%d %H:%M:%S')
-    filename = 'historical_klines.json'
 
     klines = get_historical_klines(symbol, interval, start_str, end_str)
 
     if klines:
         formatted_data = format_klines_data(klines)
-        existing_data = load_existing_data(filename)
-        new_data = [data for data in formatted_data if data not in existing_data]
-        
-        save_to_json(existing_data + new_data, filename)
+        save_klines_to_db(formatted_data)
     else:
         print("Failed to retrieve historical data.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Query and update historical exchange rate data from the Binance API in a JSON file.')
-    parser.add_argument('--days', type=int, default=1, help='Number of days to retrieve and update historical data (default 1)')
+    parser = argparse.ArgumentParser(description='Query and update historical exchange rate data from the Binance API in a MySQL database.')
+    parser.add_argument('--minutes', type=int, default=60, help='Number of minutes to retrieve and update historical data (default 60)')
     args = parser.parse_args()
 
-    main(args.days)
-
-# python main.py --days 2
+    main(args.minutes)

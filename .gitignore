@@ -1,2 +1,3 @@
 /.venv
 /historical_klines.json
+/backend/__pycache__

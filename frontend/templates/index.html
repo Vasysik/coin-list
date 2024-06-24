@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Exchange Rates</title>
+    <!-- Подключение библиотеки Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div style="width: 80%; margin: 50px auto;">
+        <div id="myDiv"></div>
+    </div>
+
+    <script>
+        // Данные для графика
+        var labels = {{ labels | tojson }};
+        var openPrices = {{ open_prices | tojson }};
+
+        // Определение данных для трассы
+        var trace = {
+            x: labels,
+            y: openPrices,
+            type: 'scatter',
+            mode: 'lines+markers',
+            marker: {color: 'blue'},
+            line: {shape: 'linear'}
+        };
+
+        // Определение данных для графика
+        var data = [trace];
+
+        // Определение макета графика
+        var layout = {
+            title: 'Currency Exchange Rates',
+            xaxis: {
+                title: 'Time'
+            },
+            yaxis: {
+                title: 'Open Price'
+            }
+        };
+
+        // Отображение графика на странице
+        Plotly.newPlot('myDiv', data, layout);
+    </script>
+</body>
+</html>

@@ -1,9 +1,13 @@
 from flask import Flask, render_template
+from flask_socketio import SocketIO
 import mysql.connector
 import json
 from datetime import datetime
+import threading
+import time
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 def load_db_config():
     with open('config.json', 'r') as config_file:
@@ -25,8 +29,7 @@ def create_connection():
         print(f"Error connecting to MySQL: {e}")
     return None
 
-@app.route('/')
-def index():
+def fetch_data():
     connection = create_connection()
     if connection:
         cursor = connection.cursor(dictionary=True)
@@ -37,10 +40,26 @@ def index():
 
         labels = [row['open_time'].strftime('%Y-%m-%d %H:%M:%S') for row in rows]
         open_prices = [float(row['open']) for row in rows]
-
-        return render_template('index.html', labels=labels, open_prices=open_prices)
+        return labels, open_prices
     else:
-        return "Failed to connect to the database."
+        return [], []
+
+@app.route('/')
+def index():
+    labels, open_prices = fetch_data()
+    return render_template('index.html', labels=labels, open_prices=open_prices)
+
+def background_thread():
+    while True:
+        socketio.sleep(10)
+        labels, open_prices = fetch_data()
+        socketio.emit('update_data', {'labels': labels, 'open_prices': open_prices})
+
+@socketio.on('connect')
+def handle_connect():
+    labels, open_prices = fetch_data()
+    socketio.emit('update_data', {'labels': labels, 'open_prices': open_prices})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.start_background_task(target=background_thread)
+    socketio.run(app, debug=True)

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Currency Exchange Rates</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 </head>
 <body>
     <div style="width: 80%; margin: 50px auto;">
@@ -12,6 +13,7 @@
     </div>
 
     <script>
+        var socket = io();
         var labels = {{ labels | tojson }};
         var openPrices = {{ open_prices | tojson }};
 
@@ -39,11 +41,13 @@
                 },
                 rangeslider: { visible: false },
                 type: 'date',
-                autorange: true
+                autorange: true,
+                fixedrange: true
             },
             yaxis: {
                 title: 'Open Price',
-                autorange: true
+                autorange: true,
+                fixedrange: true
             }
         };
 
@@ -51,29 +55,65 @@
 
         Plotly.newPlot('myDiv', [trace], layout, config);
 
-        document.getElementById('myDiv').on('plotly_relayout', function(eventdata) {
-            var xStart, xEnd;
+        socket.on('update_data', function(data) {
+            // Save the current range
+            var currentXRange = document.getElementById('myDiv').layout.xaxis.range;
+            var currentYRange = document.getElementById('myDiv').layout.yaxis.range;
 
-            if(eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
-                xStart = new Date(eventdata['xaxis.range[0]']);
-                xEnd = new Date(eventdata['xaxis.range[1]']);
-            } else {
-                return;
+            // Update data
+            labels = data.labels;
+            openPrices = data.open_prices;
+
+            var update = {
+                x: [labels],
+                y: [openPrices]
+            };
+
+            Plotly.update('myDiv', update);
+
+            if (currentXRange) {
+                var rangeDuration = new Date(currentXRange[1]) - new Date(currentXRange[0]);
+                var newXEnd = new Date(labels[labels.length - 1]);
+                var newXStart = new Date(newXEnd - rangeDuration);
+
+                var filteredPrices = openPrices.filter((price, index) => {
+                    var date = new Date(labels[index]);
+                    return date >= newXStart && date <= newXEnd;
+                });
+
+                var yMin = Math.min(...filteredPrices);
+                var yMax = Math.max(...filteredPrices);
+
+                Plotly.relayout('myDiv', {
+                    'xaxis.range': [newXStart, newXEnd],
+                    'yaxis.range': [yMin, yMax]
+                });
             }
+        });
+
+        function updateYAxisRange() {
+            var xRange = document.getElementById('myDiv').layout.xaxis.range;
+            var xStart = new Date(xRange[0]);
+            var xEnd = new Date(xRange[1]);
 
             var filteredPrices = openPrices.filter((price, index) => {
                 var date = new Date(labels[index]);
                 return date >= xStart && date <= xEnd;
             });
 
-            if(filteredPrices.length > 0) {
+            if (filteredPrices.length > 0) {
                 var yMin = Math.min(...filteredPrices);
                 var yMax = Math.max(...filteredPrices);
 
                 Plotly.relayout('myDiv', {
-                    'yaxis.autorange': false,
                     'yaxis.range': [yMin, yMax]
                 });
+            }
+        }
+
+        document.getElementById('myDiv').on('plotly_relayout', function(eventdata) {
+            if (eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
+                updateYAxisRange();
             }
         });
     </script>

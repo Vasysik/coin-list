@@ -22,9 +22,10 @@ def create_connection():
         print(f"Error connecting to MySQL: {e}")
     return None
 
-def create_table_if_not_exists(connection):
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS klines (
+def create_table_if_not_exists(connection, symbol):
+    table_name = symbol.lower()
+    create_table_query = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
         open_time DATETIME PRIMARY KEY,
         open DECIMAL(18, 8)
     )
@@ -36,12 +37,13 @@ def create_table_if_not_exists(connection):
     except Error as e:
         print(f"Error creating table: {e}")
 
-def save_klines_to_db(klines):
+def save_klines_to_db(klines, symbol):
     connection = create_connection()
     if connection:
-        create_table_if_not_exists(connection)
-        insert_query = """
-        INSERT INTO klines (open_time, open)
+        create_table_if_not_exists(connection, symbol)
+        table_name = symbol.lower()
+        insert_query = f"""
+        INSERT INTO {table_name} (open_time, open)
         VALUES (%s, %s)
         ON DUPLICATE KEY UPDATE
         open=VALUES(open)

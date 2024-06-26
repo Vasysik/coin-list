@@ -42,16 +42,37 @@
                 autorange: true
             },
             yaxis: {
-                title: 'Open Price'
+                title: 'Open Price',
+                autorange: true
             }
         };
 
-        Plotly.newPlot('myDiv', [trace], layout);
+        var config = {responsive: true};
+
+        Plotly.newPlot('myDiv', [trace], layout, config);
 
         document.getElementById('myDiv').on('plotly_relayout', function(eventdata) {
-            if (eventdata['xaxis.range[1]'] > labels[labels.length - 1]) {
+            var xStart, xEnd;
+
+            if(eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
+                xStart = new Date(eventdata['xaxis.range[0]']);
+                xEnd = new Date(eventdata['xaxis.range[1]']);
+            } else {
+                return;
+            }
+
+            var filteredPrices = openPrices.filter((price, index) => {
+                var date = new Date(labels[index]);
+                return date >= xStart && date <= xEnd;
+            });
+
+            if(filteredPrices.length > 0) {
+                var yMin = Math.min(...filteredPrices);
+                var yMax = Math.max(...filteredPrices);
+
                 Plotly.relayout('myDiv', {
-                    'xaxis.range[1]': labels[labels.length - 1]
+                    'yaxis.autorange': false,
+                    'yaxis.range': [yMin, yMax]
                 });
             }
         });

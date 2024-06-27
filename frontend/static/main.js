@@ -15,16 +15,6 @@ function createPlot(table, labels, openPrices) {
         plot_bgcolor: '#343a40',
         xaxis: {
             title: 'Time',
-            rangeselector: {
-                buttons: [
-                    { count: 1, label: '1h', step: 'hour', stepmode: 'backward' },
-                    { count: 24, label: '1d', step: 'hour', stepmode: 'backward' },
-                    { count: 7, label: '1w', step: 'day', stepmode: 'backward' },
-                    { count: 1, label: '1m', step: 'month', stepmode: 'backward' },
-                    { step: 'all', label: 'All' }
-                ]
-            },
-            rangeslider: { visible: false },
             type: 'date',
             autorange: true,
             fixedrange: true,
@@ -41,32 +31,35 @@ function createPlot(table, labels, openPrices) {
     var config = { responsive: true };
 
     Plotly.newPlot(`chart-${table}`, [trace], layout, config);
-
-    document.getElementById(`chart-${table}`).on('plotly_relayout', function(eventdata) {
-        if (eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
-            updateYAxisRange(`chart-${table}`, labels, openPrices);
-        }
-    });
 }
 
-function updateYAxisRange(chartId, labels, openPrices) {
-    var xRange = document.getElementById(chartId).layout.xaxis.range;
-    var xStart = new Date(xRange[0]);
-    var xEnd = new Date(xRange[1]);
-
-    var filteredPrices = openPrices.filter((price, index) => {
-        var date = new Date(labels[index]);
-        return date >= xStart && date <= xEnd;
-    });
-
-    if (filteredPrices.length > 0) {
-        var yMin = Math.min(...filteredPrices);
-        var yMax = Math.max(...filteredPrices);
-
-        Plotly.relayout(chartId, {
-            'yaxis.range': [yMin, yMax]
-        });
+function updateRange(table, range) {
+    let endDate = new Date();
+    let startDate = new Date();
+    
+    switch(range) {
+        case '1h':
+            startDate.setHours(endDate.getHours() - 1);
+            break;
+        case '1d':
+            startDate.setDate(endDate.getDate() - 1);
+            break;
+        case '1w':
+            startDate.setDate(endDate.getDate() - 7);
+            break;
+        case '1m':
+            startDate.setMonth(endDate.getMonth() - 1);
+            break;
+        case '1y':
+            startDate.setFullYear(endDate.getFullYear() - 1);
+            break;
     }
+
+    fetch(`/data/${table}/${startDate.toISOString()}/${endDate.toISOString()}/${range}`)
+        .then(response => response.json())
+        .then(data => {
+            createPlot(table, data.labels, data.open_prices);
+        });
 }
 
 var socket = io();

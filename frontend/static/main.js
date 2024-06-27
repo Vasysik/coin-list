@@ -4,12 +4,15 @@ function createPlot(table, labels, openPrices) {
         y: openPrices,
         type: 'scatter',
         mode: 'lines',
-        marker: { color: 'blue' },
-        line: { shape: 'linear' }
+        marker: { color: 'orange' },
+        line: { shape: 'linear', color: 'orange' }
     };
 
     var layout = {
-        title: 'Currency Exchange Rates for ' + table,
+        title: `Currency Exchange Rates for ${table}`,
+        titlefont: { color: 'white' },
+        paper_bgcolor: '#343a40',
+        plot_bgcolor: '#343a40',
         xaxis: {
             title: 'Time',
             rangeselector: {
@@ -24,22 +27,24 @@ function createPlot(table, labels, openPrices) {
             rangeslider: { visible: false },
             type: 'date',
             autorange: true,
-            fixedrange: true
+            fixedrange: true,
+            color: 'white'
         },
         yaxis: {
             title: 'Open Price',
             autorange: true,
-            fixedrange: true
+            fixedrange: true,
+            color: 'white'
         }
     };
 
     var config = { responsive: true };
 
-    Plotly.newPlot('chart-' + table, [trace], layout, config);
+    Plotly.newPlot(`chart-${table}`, [trace], layout, config);
 
-    document.getElementById('chart-' + table).on('plotly_relayout', function(eventdata) {
+    document.getElementById(`chart-${table}`).on('plotly_relayout', function(eventdata) {
         if (eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
-            updateYAxisRange('chart-' + table, labels, openPrices);
+            updateYAxisRange(`chart-${table}`, labels, openPrices);
         }
     });
 }
@@ -77,9 +82,9 @@ socket.on('update_data', function(data) {
                 y: [openPrices]
             };
 
-            Plotly.update('chart-' + table, update);
+            Plotly.update(`chart-${table}`, update);
 
-            var currentXRange = document.getElementById('chart-' + table).layout.xaxis.range;
+            var currentXRange = document.getElementById(`chart-${table}`).layout.xaxis.range;
             if (currentXRange) {
                 var rangeDuration = new Date(currentXRange[1]) - new Date(currentXRange[0]);
                 var newXEnd = new Date(labels[labels.length - 1]);
@@ -93,7 +98,7 @@ socket.on('update_data', function(data) {
                 var yMin = Math.min(...filteredPrices);
                 var yMax = Math.max(...filteredPrices);
 
-                Plotly.relayout('chart-' + table, {
+                Plotly.relayout(`chart-${table}`, {
                     'xaxis.range': [newXStart, newXEnd],
                     'yaxis.range': [yMin, yMax]
                 });

@@ -1,0 +1,16 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+h2 {
+    text-align: center;
+}
+
+#charts {
+    width: 80%;
+    margin: 50px auto;
+}
+
+.chart-container {
+    margin-bottom: 50px;
+}

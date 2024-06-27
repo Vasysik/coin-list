@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
 import mysql.connector
 import json
@@ -56,8 +56,12 @@ def get_tables():
 @app.route('/')
 def index():
     tables = get_tables()
-    data = {table: fetch_data(table) for table in tables}
-    return render_template('index.html', data=data, tables=tables)
+    return render_template('index.html', tables=tables)
+
+@app.route('/data/<table_name>')
+def data(table_name):
+    labels, open_prices = fetch_data(table_name)
+    return jsonify(labels=labels, open_prices=open_prices)
 
 def background_thread():
     while True:

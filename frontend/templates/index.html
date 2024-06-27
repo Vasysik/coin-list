@@ -11,13 +11,22 @@
 </head>
 <body>
     <div style="width: 80%; margin: 50px auto;">
-        {% for table, (labels, open_prices) in data.items() %}
+        {% for table in tables %}
             <h2>{{ table }}</h2>
             <div id="chart-{{ table }}"></div>
-            <script>
-                createPlot('{{ table }}', {{ labels | tojson }}, {{ open_prices | tojson }});
-            </script>
         {% endfor %}
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tables = {{ tables | tojson }};
+            tables.forEach(table => {
+                fetch(`/data/${table}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        createPlot(table, data.labels, data.open_prices);
+                    });
+            });
+        });
+    </script>
 </body>
 </html>

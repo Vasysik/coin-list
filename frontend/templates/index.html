@@ -29,18 +29,19 @@
             {% for table in tables %}
                 <div class="col-lg-6 col-md-12 mb-4">
                     <div class="card bg-secondary text-white">
-                        <div class="card-header text-center">
-                            {{ table }}
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="font-weight-bold text-uppercase">{{ table }}</span>
+                            <span class="small text-white-50">Currency Exchange Rates</span>
                         </div>
                         <div class="card-body">
                             <div class="btn-group mb-3 d-flex justify-content-center" role="group">
-                                <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1h')">1 Hour</button>
-                                <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1d')">1 Day</button>
-                                <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1w')">1 Week</button>
-                                <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1m')">1 Month</button>
-                                <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1y')">1 Year</button>
+                                <button type="button" class="btn" onclick="updateRange('{{ table }}', '1h')">1 Hour</button>
+                                <button type="button" class="btn" onclick="updateRange('{{ table }}', '1d')">1 Day</button>
+                                <button type="button" class="btn" onclick="updateRange('{{ table }}', '1w')">1 Week</button>
+                                <button type="button" class="btn" onclick="updateRange('{{ table }}', '1m')">1 Month</button>
+                                <button type="button" class="btn" onclick="updateRange('{{ table }}', '1y')">1 Year</button>
                             </div>
-                            <div id="chart-{{ table }}" class="chart"></div>
+                            <div id="chart-{{ table }}" class="chart w-100"></div>
                         </div>
                     </div>
                 </div>

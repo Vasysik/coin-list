@@ -18,8 +18,29 @@ body {
     font-size: 20px;
     background-color: #444;
     border-bottom: 1px solid #555;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header .small {
+    font-size: 12px;
+    font-weight: normal;
 }
 
 .chart {
-    height: 300px;
+    height: 250px;
+    width: 100%;
+}
+
+.btn-group .btn {
+    background-color: #444;
+    color: white;
+}
+
+.btn-group .btn-active {
+    background-color: #e67e22;
+    color: white;
 }

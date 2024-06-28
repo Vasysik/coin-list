@@ -33,7 +33,7 @@
                             {{ table }}
                         </div>
                         <div class="card-body">
-                            <div class="btn-group mb-3" role="group">
+                            <div class="btn-group mb-3 d-flex justify-content-center" role="group">
                                 <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1h')">1 Hour</button>
                                 <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1d')">1 Day</button>
                                 <button type="button" class="btn btn-light" onclick="updateRange('{{ table }}', '1w')">1 Week</button>
@@ -54,7 +54,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const tables = {{ tables | tojson }};
             tables.forEach(table => {
-                updateRange(table, '1d');  // Load 1 day by default
+                updateRange(table, '1d');
+                setInterval(() => updateRange(table), 10000);
             });
         });
     </script>

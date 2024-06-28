@@ -1,3 +1,5 @@
+var currentRanges = {};
+
 function createPlot(table, labels, openPrices) {
     var trace = {
         x: labels,
@@ -34,6 +36,14 @@ function createPlot(table, labels, openPrices) {
 }
 
 function updateRange(table, range) {
+    if (range) {
+        currentRanges[table] = range;
+    } else if (currentRanges[table]) {
+        range = currentRanges[table];
+    } else {
+        range = '1d'; 
+    }
+
     let endDate = new Date();
     let startDate = new Date();
     
@@ -61,41 +71,3 @@ function updateRange(table, range) {
             createPlot(table, data.labels, data.open_prices);
         });
 }
-
-var socket = io();
-
-socket.on('update_data', function(data) {
-    for (var table in data) {
-        if (data.hasOwnProperty(table)) {
-            var labels = data[table][0];
-            var openPrices = data[table][1];
-
-            var update = {
-                x: [labels],
-                y: [openPrices]
-            };
-
-            Plotly.update(`chart-${table}`, update);
-
-            var currentXRange = document.getElementById(`chart-${table}`).layout.xaxis.range;
-            if (currentXRange) {
-                var rangeDuration = new Date(currentXRange[1]) - new Date(currentXRange[0]);
-                var newXEnd = new Date(labels[labels.length - 1]);
-                var newXStart = new Date(newXEnd - rangeDuration);
-
-                var filteredPrices = openPrices.filter((price, index) => {
-                    var date = new Date(labels[index]);
-                    return date >= newXStart && date <= newXEnd;
-                });
-
-                var yMin = Math.min(...filteredPrices);
-                var yMax = Math.max(...filteredPrices);
-
-                Plotly.relayout(`chart-${table}`, {
-                    'xaxis.range': [newXStart, newXEnd],
-                    'yaxis.range': [yMin, yMax]
-                });
-            }
-        }
-    }
-});

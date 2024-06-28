@@ -109,19 +109,5 @@ def get_tables():
         return tables
     return []
 
-def background_thread():
-    while True:
-        socketio.sleep(10)
-        tables = get_tables()
-        data = {table: fetch_data(table) for table in tables}
-        socketio.emit('update_data', data)
-
-@socketio.on('connect')
-def handle_connect():
-    tables = get_tables()
-    data = {table: fetch_data(table) for table in tables}
-    socketio.emit('update_data', data)
-
 if __name__ == "__main__":
-    socketio.start_background_task(target=background_thread)
     socketio.run(app, debug=True)

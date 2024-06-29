@@ -1,6 +1,6 @@
 {
-    "host": "localhost",
-    "database": "your_database_name",
-    "user": "your_username",
-    "password": "your_password"
+    "url": "http://localhost:8086",
+    "token": "your-influxdb-token",
+    "org": "your-org",
+    "bucket": "your-bucket"
 }

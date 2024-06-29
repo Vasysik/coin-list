@@ -1,9 +1,9 @@
 import argparse
 import requests
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 import json
 import logging
-from db import save_klines_to_db
+from db import save_klines_to_influxdb
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def format_klines_data(klines):
     formatted_data = []
     for kline in klines:
         kline_data = {
-            'open_time': datetime.fromtimestamp(kline[0] / 1000).strftime('%Y-%m-%d %H:%M:%S'),
+            'open_time': datetime.fromtimestamp(kline[0] / 1000).isoformat(),
             'open': kline[1]
         }
         formatted_data.append(kline_data)
@@ -70,7 +70,7 @@ def get_all_symbols():
 def main(minutes, coins):
     interval = '1m'
     
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     start_date = now - timedelta(minutes=minutes)
     
     start_str = start_date.strftime('%Y-%m-%d %H:%M:%S')
@@ -82,13 +82,13 @@ def main(minutes, coins):
 
         if klines:
             formatted_data = format_klines_data(klines)
-            save_klines_to_db(formatted_data, symbol)
+            save_klines_to_influxdb(formatted_data, symbol)
             logger.info(f"Successfully saved data for {symbol}")
         else:
             logger.warning(f"Failed to retrieve historical data for {symbol}.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Query and update historical exchange rate data from the Binance API in a MySQL database.')
+    parser = argparse.ArgumentParser(description='Query and update historical exchange rate data from the Binance API in an InfluxDB database.')
     parser.add_argument('--minutes', type=int, default=60, help='Number of minutes to retrieve and update historical data (default 60)')
     parser.add_argument('--coin', type=str, default='BTCUSDT', help='Coin symbol(s) to retrieve data for (e.g., BTCUSDT, "BTCUSDT,ETHUSDT", list.json, or all)')
     args = parser.parse_args()

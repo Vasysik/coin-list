@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO
-import mysql.connector
+from influxdb_client import InfluxDBClient
 import json
 from datetime import datetime, timedelta
 
@@ -12,102 +12,53 @@ def load_db_config():
         config = json.load(config_file)
     return config
 
-def create_connection():
+def load_coin_list():
+    with open('coin_list.json', 'r') as file:
+        coin_list = json.load(file)
+    return coin_list
+
+def create_influxdb_client():
     config = load_db_config()
-    try:
-        connection = mysql.connector.connect(
-            host=config['host'],
-            database=config['database'],
-            user=config['user'],
-            password=config['password']
-        )
-        if connection.is_connected():
-            return connection
-    except mysql.connector.Error as e:
-        print(f"Error connecting to MySQL: {e}")
-    return None
+    client = InfluxDBClient(url=config['url'], token=config['token'], org=config['org'])
+    return client
 
-def fetch_data(table_name, start_date, end_date, interval):
-    connection = create_connection()
-    if connection:
-        cursor = connection.cursor(dictionary=True)
-        query = f"SELECT open_time, open FROM {table_name} WHERE open_time BETWEEN %s AND %s ORDER BY open_time"
-        cursor.execute(query, (start_date, end_date))
-        rows = cursor.fetchall()
-        cursor.close()
-        connection.close()
+def fetch_data(symbol, start_date, end_date, interval):
+    config = load_db_config()
+    client = create_influxdb_client()
+    query_api = client.query_api()
+    query = f'''
+    from(bucket: "{config['bucket']}")
+    |> range(start: {start_date}, stop: {end_date})
+    |> filter(fn: (r) => r["_measurement"] == "klines" and r["symbol"] == "{symbol}")
+    |> filter(fn: (r) => r["_field"] == "open")
+    |> aggregateWindow(every: {interval}, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    '''
+    tables = query_api.query(query)
+    labels = []
+    open_prices = []
+    for table in tables:
+        for record in table.records:
+            labels.append(record.get_time().strftime('%Y-%m-%d %H:%M:%S'))
+            open_prices.append(record.get_value())
+    return labels, open_prices
 
-        if interval:
-            rows = aggregate_data(rows, interval)
-
-        labels = [row['open_time'].strftime('%Y-%m-%d %H:%M:%S') for row in rows]
-        open_prices = [float(row['open']) for row in rows]
-        return labels, open_prices
-    else:
-        return [], []
-
-def aggregate_data(rows, interval):
-    aggregated_data = []
-    current_period_start = None
-    current_period_data = []
-
-    def round_time(dt, delta):
-        return dt - (dt - datetime.min) % delta
-
-    for row in rows:
-        open_time = row['open_time']
-        open_price = float(row['open'])
-
-        if current_period_start is None:
-            current_period_start = round_time(open_time, interval)
-
-        if open_time >= current_period_start + interval:
-            average_open = sum([data['open'] for data in current_period_data]) / len(current_period_data)
-            aggregated_data.append({
-                'open_time': current_period_start,
-                'open': average_open
-            })
-            current_period_start = round_time(open_time, interval)
-            current_period_data = []
-
-        current_period_data.append(row)
-
-    if current_period_data:
-        average_open = sum([data['open'] for data in current_period_data]) / len(current_period_data)
-        aggregated_data.append({
-            'open_time': current_period_start,
-            'open': average_open
-        })
-
-    return aggregated_data
-
-@app.route('/data/<table_name>/<start_date>/<end_date>/<interval>')
-def data_in_range(table_name, start_date, end_date, interval):
+@app.route('/data/<symbol>/<start_date>/<end_date>/<interval>')
+def data_in_range(symbol, start_date, end_date, interval):
     intervals = {
-        "1h": None,
-        "1d": timedelta(minutes=5),
-        "1w": timedelta(hours=1),
-        "1m": timedelta(hours=6),
-        "1y": timedelta(days=1)
+        "1h": "1h",
+        "1d": "5m",
+        "1w": "1h",
+        "1m": "6h",
+        "1y": "1d"
     }
-    labels, open_prices = fetch_data(table_name, start_date, end_date, intervals.get(interval))
+    labels, open_prices = fetch_data(symbol, start_date, end_date, intervals.get(interval, "5m"))
     return jsonify(labels=labels, open_prices=open_prices)
 
 @app.route('/')
 def index():
-    tables = get_tables()
-    return render_template('index.html', tables=tables)
-
-def get_tables():
-    connection = create_connection()
-    if connection:
-        cursor = connection.cursor()
-        cursor.execute("SHOW TABLES")
-        tables = [row[0] for row in cursor.fetchall()]
-        cursor.close()
-        connection.close()
-        return tables
-    return []
+    symbols = load_coin_list()
+    return render_template('index.html', tables=symbols)
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)

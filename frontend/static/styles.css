@@ -44,3 +44,12 @@ body {
     background-color: #e67e22;
     color: white;
 }
+
+.single-column .chart-column {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+.single-column .chart {
+    height: 500px;
+}

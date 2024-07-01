@@ -1,6 +1,6 @@
 import argparse
 import requests
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 import json
 import logging
 from db import save_klines_to_influxdb
@@ -70,7 +70,7 @@ def get_all_symbols():
 def main(minutes, coins):
     interval = '1m'
     
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     start_date = now - timedelta(minutes=minutes)
     
     start_str = start_date.strftime('%Y-%m-%d %H:%M:%S')

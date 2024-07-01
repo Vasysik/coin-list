@@ -3,6 +3,7 @@ from flask_socketio import SocketIO
 from influxdb_client import InfluxDBClient
 import json
 from datetime import datetime, timedelta
+from dateutil import parser, tz
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -28,7 +29,7 @@ def fetch_data(symbol, start_date, end_date, interval):
     query_api = client.query_api()
     query = f'''
     from(bucket: "{config['bucket']}")
-    |> range(start: {start_date}, stop: {end_date})
+    |> range(start: {start_date.isoformat()}, stop: {end_date.isoformat()})
     |> filter(fn: (r) => r["_measurement"] == "klines" and r["symbol"] == "{symbol}")
     |> filter(fn: (r) => r["_field"] == "open")
     |> aggregateWindow(every: {interval}, fn: mean, createEmpty: false)
@@ -45,8 +46,11 @@ def fetch_data(symbol, start_date, end_date, interval):
 
 @app.route('/data/<symbol>/<start_date>/<end_date>/<interval>')
 def data_in_range(symbol, start_date, end_date, interval):
+    start_date = parser.parse(start_date).astimezone(tz.UTC)
+    end_date = parser.parse(end_date).astimezone(tz.UTC)
+    
     intervals = {
-        "1h": "1h",
+        "1h": "1m",
         "1d": "5m",
         "1w": "1h",
         "1m": "6h",

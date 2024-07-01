@@ -19,15 +19,15 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Home</a>
+                    <button id="toggle-view" class="btn nav-link" style="background-color: #e67e22; color: white;">Toggle View</button>
                 </li>
             </ul>
         </div>
     </nav>
     <div class="container mt-4">
-        <div class="row">
+        <div id="chart-container" class="row">
             {% for table in tables %}
-                <div class="col-lg-6 col-md-12 mb-4">
+                <div class="col-lg-6 col-md-12 mb-4 chart-column">
                     <div class="card bg-secondary text-white">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span class="font-weight-bold text-uppercase">{{ table }}</span>
@@ -57,6 +57,18 @@
             tables.forEach(table => {
                 updateRange(table, '1d');
                 setInterval(() => updateRange(table), 10000);
+            });
+
+            const toggleButton = document.getElementById('toggle-view');
+            toggleButton.addEventListener('click', function() {
+                const chartContainer = document.getElementById('chart-container');
+                chartContainer.classList.toggle('single-column');
+                tables.forEach(table => {
+                    updateRange(table);
+                    Plotly.relayout(`chart-${table}`, {
+                        height: chartContainer.classList.contains('single-column') ? 500 : 250
+                    });
+                });
             });
         });
     </script>
